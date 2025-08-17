@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Management System | User Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">Product Management System | User</a>
+            <div class="navbar-nav">
+                <a class="nav-link" href="#" id="user-product-list-link">Products</a>
+                <a class="nav-link" href="#" id="user-cart-link">Cart (<span id="cart-count">0</span>)</a>
+                <a class="nav-link" href="#" id="user-logout-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container py-4">
+        <div id="user-main-content">
+            <!-- Content loaded dynamically by user.js -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // user.js
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is logged in
+    const currentUser = JSON.parse(localStorage.getItem('pms_currentUser'));
+    if (!currentUser) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Initialize cart if not exists
+    let carts = JSON.parse(localStorage.getItem('pms_carts')) || {};
+    if (!carts[currentUser.id]) {
+        carts[currentUser.id] = [];
+        localStorage.setItem('pms_carts', JSON.stringify(carts));
+    }
+
+    // Load initial product list
+    loadUserProductList();
+    updateCartCount();
+
+    // Navigation event listeners
+    document.getElementById('user-product-list-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        loadUserProductList();
+    });
+
+    document.getElementById('user-cart-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        loadUserCart();
+    });
+
+    document.getElementById('user-logout-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem('pms_currentUser');
+        window.location.href = 'login.html';
+    });
+
+    function loadUserProductList() {
+        const products = JSON.parse(localStorage.getItem('pms_products')) || [];
+        let productCardsHTML = '<div class="row">';
+
+        products.forEach(product => {
+            productCardsHTML += `
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <img src="${product.image || 'https://via.placeholder.com/150'}" class="card-img-top" alt="${product.name}" style="height: 200px; object-fit: cover;">
+                        <div class="card-body">
+                            <h5 class="card-title">${product.name}</h5>
+                            <p class="card-text">${product.description.substring(0, 100)}...</p>
+                            <p class="card-text"><strong>$${product.price.toFixed(2)}</strong></p>
+                            <button class="btn btn-pink add-to-cart" data-id="${product.id}">Add to Cart</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        productCardsHTML += '</div>';
+        document.getElementById('user-main-content').innerHTML = productCardsHTML;
+
+        // Add event listeners for add to cart buttons
+        document.querySelectorAll('.add-to-cart').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const productId = parseInt(e.target.getAttribute('data-id'));
+                addToCart(productId);
+            });
+        });
+    }
+
+    function addToCart(productId) {
+        const products = JSON.parse(localStorage.getItem('pms_products')) || [];
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+
+        let carts = JSON.parse(localStorage.getItem('pms_carts')) || {};
+        if (!carts[currentUser.id]) {
+            carts[currentUser.id] = [];
+        }
+
+        // Check if product already in cart
+        const existingItem = carts[currentUser.id].find(item => item.productId === productId);
+        if (existingItem) {
+            existingItem.quantity += 1;
+        } else {
+            carts[currentUser.id].push({
+                productId,
+                name: product.name,
+                price: product.price,
+                quantity: 1
+            });
+        }
+
+        localStorage.setItem('pms_carts', JSON.stringify(carts));
+        updateCartCount();
+        alert(`${product.name} added to cart!`);
+    }
+
+    function updateCartCount() {
+        const carts = JSON.parse(localStorage.getItem('pms_carts')) || {};
+        if (!currentUser || !carts[currentUser.id]) {
+            document.getElementById('cart-count').textContent = '0';
+            return;
+        }
+
+        const count = carts[currentUser.id].reduce((total, item) => total + item.quantity, 0);
+        document.getElementById('cart-count').textContent = count.toString();
+    }
+
+    function loadUserCart() {
+        const carts = JSON.parse(localStorage.getItem('pms_carts')) || {};
+        const userCart = carts[currentUser.id] || [];
+
+        if (userCart.length === 0) {
+            document.getElementById('user-main-content').innerHTML = `
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <h3 class="card-title">Your cart is empty</h3>
+                        <p class="card-text">Browse our products and add some items to your cart.</p>
+                        <button class="btn btn-pink" id="continue-shopping">Continue Shopping</button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('continue-shopping').addEventListener('click', loadUserProductList);
+            return;
+        }
+
+        let cartHTML = `
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Your Shopping Cart</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+        `;
+
+        let grandTotal = 0;
+        userCart.forEach((item, index) => {
+            const itemTotal = item.price * item.quantity;
+            grandTotal += itemTotal;
+            
+            cartHTML += `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>$${item.price.toFixed(2)}</td>
+                    <td>${item.quantity}</td>
+                    <td>$${itemTotal.toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger remove-item" data-index="${index}">Remove</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        cartHTML += `
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Grand Total:</strong></td>
+                                    <td><strong>$${grandTotal.toFixed(2)}</strong></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between mt-4">
+                        <button class="btn btn-outline-secondary" id="back-to-products">Continue Shopping</button>
+                        <button class="btn btn-pink" id="checkout-btn">Proceed to Checkout</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('user-main-content').innerHTML = cartHTML;
+
+        // Add event listeners
+        document.querySelectorAll('.remove-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const itemIndex = parseInt(e.target.getAttribute('data-index'));
+                removeFromCart(itemIndex);
+            });
+        });
+
+        document.getElementById('back-to-products').addEventListener('click', loadUserProductList);
+        document.getElementById('checkout-btn').addEventListener('click', checkout);
+    }
+
+    function removeFromCart(itemIndex) {
+        let carts = JSON.parse(localStorage.getItem('pms_carts')) || {};
+        if (!carts[currentUser.id]) return;
+
+        carts[currentUser.id].splice(itemIndex, 1);
+        localStorage.setItem('pms_carts', JSON.stringify(carts));
+        loadUserCart();
+        updateCartCount();
+    }
+
+    function checkout() {
+        const carts = JSON.parse(localStorage.getItem('pms_carts')) || {};
+        const userCart = carts[currentUser.id] || [];
+        if (userCart.length === 0) return;
+
+        const total = userCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        document.getElementById('user-main-content').innerHTML = `
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Checkout</h4>
+                </div>
+                <div class="card-body text-center py-5">
+                    <h3 class="card-title">Order Confirmation</h3>
+                    <p class="card-text">Thank you for your order!</p>
+                    <p class="card-text">Your total is: <strong>$${total.toFixed(2)}</strong></p>
+                    <p class="card-text">A confirmation has been sent to your email.</p>
+                    
+                    <div class="mt-4">
+                        <button class="btn btn-pink" id="new-order">Place Another Order</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Clear the cart after checkout
+        carts[currentUser.id] = [];
+        localStorage.setItem('pms_carts', JSON.stringify(carts));
+        updateCartCount();
+
+        document.getElementById('new-order').addEventListener('click', loadUserProductList);
+    }
+});
+    </script>
+</body>
+</html>

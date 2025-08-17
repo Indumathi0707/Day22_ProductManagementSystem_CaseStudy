@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Management System | Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">Product Management System | Admin</a>
+            <div class="navbar-nav">
+                <a class="nav-link" href="#" id="admin-dashboard-link">Dashboard</a>
+                <a class="nav-link" href="#" id="add-product-link">Add Product</a>
+                <a class="nav-link" href="#" id="product-list-link">Product List</a>
+                <a class="nav-link" href="#" id="admin-logout-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container py-4">
+        <div id="admin-main-content">
+            <!-- Content loaded dynamically by admin.js -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // admin.js
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is logged in and is admin
+    const currentUser = JSON.parse(localStorage.getItem('pms_currentUser'));
+    if (!currentUser || currentUser.role !== 'admin') {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Load initial dashboard
+    loadAdminDashboard();
+
+    // Navigation event listeners
+    document.getElementById('admin-dashboard-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        loadAdminDashboard();
+    });
+
+    document.getElementById('add-product-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        loadAddProductForm();
+    });
+
+    document.getElementById('product-list-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        loadProductList();
+    });
+
+    document.getElementById('admin-logout-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem('pms_currentUser');
+        window.location.href = 'login.html';
+    });
+
+    function loadAdminDashboard() {
+        const products = JSON.parse(localStorage.getItem('pms_products')) || [];
+        document.getElementById('admin-main-content').innerHTML = `
+            <div class="card shadow-sm">
+                <div class="card-body text-center py-5">
+                    <h3 class="card-title">Welcome, ${currentUser.name}</h3>
+                    <p class="card-text">You have ${products.length} products in your catalog.</p>
+                    <div class="mt-4">
+                        <button class="btn btn-pink me-2" id="go-to-add-product">Add New Product</button>
+                        <button class="btn btn-outline-secondary" id="go-to-product-list">View All Products</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('go-to-add-product').addEventListener('click', loadAddProductForm);
+        document.getElementById('go-to-product-list').addEventListener('click', loadProductList);
+    }
+
+    function loadAddProductForm() {
+        document.getElementById('admin-main-content').innerHTML = `
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Add New Product</h4>
+                </div>
+                <div class="card-body">
+                    <form id="add-product-form">
+                        <div class="mb-3">
+                            <label for="product-name" class="form-label">Product Name</label>
+                            <input type="text" class="form-control" id="product-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="product-description" class="form-label">Description</label>
+                            <textarea class="form-control" id="product-description" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="product-price" class="form-label">Price</label>
+                            <input type="number" step="0.01" class="form-control" id="product-price" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="product-image" class="form-label">Image URL</label>
+                            <input type="text" class="form-control" id="product-image">
+                        </div>
+                        <button type="submit" class="btn btn-pink">Add Product</button>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('add-product-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            addProduct();
+        });
+    }
+
+    function addProduct() {
+        const name = document.getElementById('product-name').value;
+        const description = document.getElementById('product-description').value;
+        const price = parseFloat(document.getElementById('product-price').value);
+        const image = document.getElementById('product-image').value || 'https://via.placeholder.com/150';
+
+        const products = JSON.parse(localStorage.getItem('pms_products')) || [];
+        
+        const newProduct = {
+            id: Date.now(),
+            name,
+            description,
+            price,
+            image
+        };
+
+        products.push(newProduct);
+        localStorage.setItem('pms_products', JSON.stringify(products));
+
+        alert('Product added successfully!');
+        loadProductList();
+    }
+
+    function loadProductList() {
+        const products = JSON.parse(localStorage.getItem('pms_products')) || [];
+        let productListHTML = `
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Product List</h4>
+                    <button class="btn btn-pink btn-sm" id="add-new-product-btn">Add New</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Price</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+        `;
+
+        products.forEach(product => {
+            productListHTML += `
+                <tr>
+                    <td>${product.id}</td>
+                    <td>${product.name}</td>
+                    <td>${product.description.substring(0, 50)}...</td>
+                    <td>$${product.price.toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary me-2 edit-product" data-id="${product.id}">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger delete-product" data-id="${product.id}">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        productListHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('admin-main-content').innerHTML = productListHTML;
+
+        document.getElementById('add-new-product-btn').addEventListener('click', loadAddProductForm);
+
+        document.querySelectorAll('.edit-product').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const productId = parseInt(e.target.getAttribute('data-id'));
+                editProduct(productId);
+            });
+        });
+
+        document.querySelectorAll('.delete-product').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const productId = parseInt(e.target.getAttribute('data-id'));
+                deleteProduct(productId);
+            });
+        });
+    }
+
+    function editProduct(productId) {
+        const products = JSON.parse(localStorage.getItem('pms_products')) || [];
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+
+        document.getElementById('admin-main-content').innerHTML = `
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Edit Product</h4>
+                </div>
+                <div class="card-body">
+                    <form id="edit-product-form">
+                        <input type="hidden" id="edit-product-id" value="${product.id}">
+                        <div class="mb-3">
+                            <label for="edit-product-name" class="form-label">Product Name</label>
+                            <input type="text" class="form-control" id="edit-product-name" value="${product.name}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-product-description" class="form-label">Description</label>
+                            <textarea class="form-control" id="edit-product-description" rows="3" required>${product.description}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-product-price" class="form-label">Price</label>
+                            <input type="number" step="0.01" class="form-control" id="edit-product-price" value="${product.price}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-product-image" class="form-label">Image URL</label>
+                            <input type="text" class="form-control" id="edit-product-image" value="${product.image}">
+                        </div>
+                        <button type="submit" class="btn btn-pink me-2">Update</button>
+                        <button type="button" class="btn btn-outline-secondary" id="cancel-edit">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('edit-product-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            updateProduct();
+        });
+
+        document.getElementById('cancel-edit').addEventListener('click', loadProductList);
+    }
+
+    function updateProduct() {
+        const id = parseInt(document.getElementById('edit-product-id').value);
+        const name = document.getElementById('edit-product-name').value;
+        const description = document.getElementById('edit-product-description').value;
+        const price = parseFloat(document.getElementById('edit-product-price').value);
+        const image = document.getElementById('edit-product-image').value;
+
+        const products = JSON.parse(localStorage.getItem('pms_products')) || [];
+        const productIndex = products.findIndex(p => p.id === id);
+        
+        if (productIndex !== -1) {
+            products[productIndex] = { id, name, description, price, image };
+            localStorage.setItem('pms_products', JSON.stringify(products));
+            alert('Product updated successfully!');
+            loadProductList();
+        }
+    }
+
+    function deleteProduct(productId) {
+        if (confirm('Are you sure you want to delete this product?')) {
+            let products = JSON.parse(localStorage.getItem('pms_products')) || [];
+            products = products.filter(p => p.id !== productId);
+            localStorage.setItem('pms_products', JSON.stringify(products));
+            loadProductList();
+        }
+    }
+});
+    </script>
+</body>
+</html>

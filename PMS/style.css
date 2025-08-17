@@ -1,0 +1,55 @@
+/* style.css */
+:root {
+    --primary-pink: #ff69b4;
+    --light-pink: #ffb6c1;
+    --dark-pink: #db7093;
+    --pale-pink: #ffe4e1;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--pale-pink);
+    color: #333;
+}
+
+.navbar-brand, .nav-link {
+    color: var(--primary-pink) !important;
+    font-weight: 600;
+}
+
+.btn-pink {
+    background-color: var(--primary-pink);
+    color: white;
+    border: none;
+}
+
+.btn-pink:hover {
+    background-color: var(--dark-pink);
+    color: white;
+}
+
+.card {
+    border: 1px solid var(--light-pink);
+    transition: transform 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(219, 112, 147, 0.2);
+}
+
+.hero-section {
+    background: linear-gradient(135deg, var(--light-pink), var(--primary-pink));
+    color: white;
+    padding: 4rem 0;
+    border-radius: 0 0 20px 20px;
+}
+
+.form-control:focus {
+    border-color: var(--primary-pink);
+    box-shadow: 0 0 0 0.25rem rgba(255, 105, 180, 0.25);
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
